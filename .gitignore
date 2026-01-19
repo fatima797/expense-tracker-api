@@ -1,0 +1,36 @@
+# Java build
+*.class
+target/
+out/
+
+# Logs
+*.log
+spring-boot-*.log
+
+# Eclipse / IDEs
+.classpath
+.project
+.settings/
+.idea/
+.eclipse/
+.vscode/
+*.iml
+*.ipr
+*.iws
+
+# Environment / Config
+.env
+.env.local
+application.yml
+application.properties
+
+# Test Coverage
+coverage/
+*.exec
+
+# Maven Wrapper
+.mvn/wrapper/maven-wrapper.jar
+
+# OS-specific junk
+.DS_Store
+Thumbs.db
