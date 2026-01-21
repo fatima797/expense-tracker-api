@@ -7,6 +7,7 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 
 @Entity
@@ -36,7 +37,11 @@ public class User {
 		this.username = username;
 		this.email = email;
 		this.password = password;
-		this.createdAt = LocalDateTime.now();
+	}
+	
+	@PrePersist
+	protected void onCreate() {
+	    this.createdAt = LocalDateTime.now();
 	}
 
 	public Long getId() {
