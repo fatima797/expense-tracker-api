@@ -2,6 +2,7 @@ package io.github.fatima797.expensetracker.model;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.UUID;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -21,6 +22,9 @@ public class Expense {
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
+	
+	@Column(nullable = false, unique = true, updatable = false)
+	private UUID publicId = UUID.randomUUID();
 	
 	@Column(nullable = false)
 	private String name;
@@ -61,6 +65,10 @@ public class Expense {
 
 	public void setId(Long id) {
 		this.id = id;
+	}
+	
+	public UUID getPublicId() {
+		return publicId;
 	}
 
 	public String getName() {
