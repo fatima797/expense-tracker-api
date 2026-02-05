@@ -81,6 +81,16 @@ Registers a new user account.
 }
 ```
 
+**Response Body:**
+
+```json
+{
+  "publicId": "f7c3b9d5-4a12-4c75-bc8f-5bbbdc87b44f",
+  "email": "jane@example.com",
+  "createdAt": "2026-02-05T10:42:13"
+}
+```
+
 ## Roadmap
 Upcoming features:
 - Login endpoint
