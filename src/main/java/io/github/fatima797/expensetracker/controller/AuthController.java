@@ -15,27 +15,26 @@ import io.github.fatima797.expensetracker.service.UserService;
 import jakarta.validation.Valid;
 
 @RestController
-@RequestMapping("/api/users")
-public class UserController {
-
+@RequestMapping("/api/v1/auth")
+public class AuthController {
+	
 	private final UserService userService;
 
-	public UserController(UserService userService) {
-		super();
+	public AuthController(UserService userService) {
 		this.userService = userService;
 	}
+	
+	@PostMapping("/register")
+    public ResponseEntity<UserResponse> register(@Valid @RequestBody UserRequest userRequest) {
+        UserResponse response = userService.createUser(userRequest);
+        
+        URI location = ServletUriComponentsBuilder
+                .fromCurrentRequest()
+                .path("/api/v1/users/{publicId}") 
+                .buildAndExpand(response.publicId())
+                .toUri();
+        
+        return ResponseEntity.created(location).body(response);
+    }
 
-	@PostMapping
-	public ResponseEntity<UserResponse> create(@Valid @RequestBody UserRequest userRequest) {
-		UserResponse response = userService.createUser(userRequest);
-		
-		URI location = ServletUriComponentsBuilder
-				.fromCurrentRequest()
-				.path("/{publicId}")
-				.buildAndExpand(response.publicId())
-				.toUri();
-
-		return ResponseEntity.created(location).body(response);
-
-	}
 }

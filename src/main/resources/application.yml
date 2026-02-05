@@ -1,0 +1,22 @@
+spring:
+  application:
+    name: expense-tracker-api
+  profiles:
+     active: dev
+     
+  h2:
+    console:
+      enabled: false
+
+server:
+  port: 8081
+
+# Enable health endpoint
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "health"
+  endpoint:
+     health:
+       show-details: always
