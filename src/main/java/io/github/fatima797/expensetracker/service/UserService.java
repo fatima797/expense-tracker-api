@@ -5,9 +5,11 @@ import org.springframework.stereotype.Service;
 
 import io.github.fatima797.expensetracker.dto.UserRequest;
 import io.github.fatima797.expensetracker.dto.UserResponse;
+import io.github.fatima797.expensetracker.exception.DuplicateEmailException;
+import io.github.fatima797.expensetracker.exception.UserNotFoundException;
 import io.github.fatima797.expensetracker.model.User;
 import io.github.fatima797.expensetracker.repository.UserRepository;
-import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class UserService {
@@ -26,8 +28,7 @@ public class UserService {
 		String email = userRequest.email().trim().toLowerCase();
 		
 		if(userRepository.existsByEmail(email)) {
-			throw new IllegalArgumentException("Email already in use");
-			//TODO : Custom Exception handling
+			throw new DuplicateEmailException("Email already exists");
 		}  
 		
 		User newUser = new User(
@@ -42,6 +43,12 @@ public class UserService {
 				saved.getEmail(),
 				saved.getCreatedAt()
 				);
+	}
+
+	@Transactional(readOnly = true)
+	public User getUserByEmail(String email) {
+		return userRepository.findByEmail(email)
+				.orElseThrow(() -> new UserNotFoundException("User not found with email: " + email));
 	}
 
 }

@@ -4,72 +4,134 @@ A Spring Boot REST API designed to help track personal expenses and manage budge
 
 **Status:** Under active development (Authentication & Security Phase).
 
+---
+
 ## Tech Stack
+
 - Java 17
-- Spring Boot 3.5.x
+- Spring Boot 3.4.0
 - Spring Security
 - Spring Data JPA
 - Maven Wrapper
-- H2 Database
-- Docker Compose
+- MySQL 8.0
+- H2 (in-memory database for testing)
+- Docker & Docker Compose
 
 ## Prerequisites
-Before running the application, ensure you have the following installed:
+
+### For Docker
+
+- Docker Desktop
+
+### For Local Development
+
 - JDK 17+
-- Docker (optional, only if running via Option 2)
+- MySQL 8.0
 
-*Note: You do not need Maven installed on your system; this project uses the included Maven Wrapper (`mvnw`).*
+## Getting Started
 
-## Running the Application
+### 1. Clone the repository
 
-### Option 1: Using the Maven Wrapper
-
-1. Clone the repository
 ```bash
 git clone https://github.com/fatima797/expense-tracker-api.git
 cd expense-tracker-api
 ```
 
-2. Run the project
+### 2. Choose Run Options
 
-Unix:
-```bash
-./mvnw spring-boot:run
-```
+This project supports two execution modes:
 
-Windows:
-```bash
-mvnw spring-boot:run
-```
-
-
-### Option 2: Using Docker
-
-1. Ensure Docker is running.
- 
-2. Run the following command in the root directory to start the containers:
-   ```bash
-   docker compose up --build
-   ```
-3. To stop:
-   ```bash
-   docker compose down
-   ```
-
-## API Endpoints
-
-### Health Metrics
-
-**GET** `/actuator/health`
-
-Returns application health status.
+- Docker Compose
+- Local development using the Maven wrapper
 
 ---
 
-### Authentication
-**POST** `/api/v1/auth/register`
+### Option 1: Docker Compose
 
-Registers a new user account.
+Copy `.env.example` to `.env` and fill in your values:
+
+```bash
+cp .env.example .env
+```
+
+```env
+DB_URL=jdbc:mysql://mysql:3306/expense_tracker_db
+DB_USERNAME=your_db_username
+DB_PASSWORD=your_db_password
+DB_ROOT_PASSWORD=your_root_password_here
+JWT_SECRET=your_secret_key_here
+JWT_EXPIRATION=86400000
+```
+
+> [!NOTE]
+> `DB_ROOT_PASSWORD` is required for initializing the MySQL container.
+
+Run the application:
+
+```bash
+docker compose up --build
+```
+
+To stop:
+
+```bash
+docker compose down
+```
+
+The application will be available at:
+http://localhost:8081
+
+---
+
+### Option 2: Local Development (Maven Wrapper)
+
+The application uses a `local` Spring profile for running outside Docker.
+
+Example configuration (`application-local.yml`):
+
+```yaml
+spring:
+  datasource:
+    url: jdbc:mysql://localhost:3306/expense_tracker_db
+    username: username
+    password: yourpassword
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+
+server:
+  port: 8081
+```
+
+Run the application:
+
+```bash
+./mvnw spring-boot:run -Dspring-boot.run.profiles=local
+```
+
+> [!NOTE]
+> When running locally, ensure MySQL is running and matches the `application-local.yml` configuration.
+
+---
+
+## Running Tests
+
+Tests run using the `test` Spring profile.
+
+```bash
+./mvnw test
+```
+
+## API Endpoints
+
+| Method | Endpoint                | Description                  | Auth Required |
+| ------ | ----------------------- | ---------------------------- | ------------- |
+| POST   | `/api/v1/auth/register` | Register a new user          | No            |
+| POST   | `/api/v1/auth/login`    | Authenticate and receive JWT | No            |
+
+### POST `/api/v1/auth/register`
 
 **Request Body:**
 
@@ -77,7 +139,7 @@ Registers a new user account.
 {
   "username": "janedoe",
   "email": "jane@example.com",
-  "password": "password123"
+  "password": "SecurePass123!"
 }
 ```
 
@@ -91,14 +153,43 @@ Registers a new user account.
 }
 ```
 
+### POST `/api/v1/auth/login`
+
+**Request Body:**
+
+```json
+{
+  "email": "jane@example.com",
+  "password": "SecurePass123!"
+}
+```
+
+**Response Body:**
+
+```json
+{
+  "token": "eyJhbGciOiJIUzI1NiJ9...",
+  "username": "jane@example.com",
+  "publicId": "ffbea372-8c03-4b62-8e0d-a0c835d85af1"
+}
+```
+
+## Features
+
+- **Secure Authentication:** JWT-based login with Spring Security
+- **Password Safety:** Passwords hashed using BCrypt
+- **Persistence:** MySQL 8.0 with JPA/Hibernate
+- **Containerization:** Fully Dockerized with Docker Compose
+
 ## Roadmap
+
 Upcoming features:
-- Login endpoint
-- JWT authentication
+
+- Implement JWT filter for security protected endpoints.
+- Secure endpoints for Expense CRUD operations.
 
 ## Project Challenge Source
 
 This project is inspired by the **Expense Tracker API** challenge provided by roadmap.sh.
 
 [View the original challenge instructions here](https://roadmap.sh/projects/expense-tracker-api)
-

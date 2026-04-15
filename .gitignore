@@ -22,6 +22,7 @@ spring-boot-*.log
 .env
 .env.local
 application-local.yml
+application-dev.yml
 *.properties
 
 # Test Coverage
