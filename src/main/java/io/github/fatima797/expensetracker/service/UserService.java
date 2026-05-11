@@ -3,8 +3,8 @@ package io.github.fatima797.expensetracker.service;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import io.github.fatima797.expensetracker.dto.UserRequest;
-import io.github.fatima797.expensetracker.dto.UserResponse;
+import io.github.fatima797.expensetracker.dto.NewUserRegistration;
+import io.github.fatima797.expensetracker.dto.UserRegistrationResponse;
 import io.github.fatima797.expensetracker.exception.DuplicateEmailException;
 import io.github.fatima797.expensetracker.exception.UserNotFoundException;
 import io.github.fatima797.expensetracker.model.User;
@@ -17,32 +17,29 @@ public class UserService {
 	private final PasswordEncoder passwordEncoder;
 
 	public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder) {
-		super();
 		this.userRepository = userRepository;
 		this.passwordEncoder = passwordEncoder;
 	}
-	
+
 	@Transactional
-	public UserResponse createUser(UserRequest userRequest) {
-		
+	public UserRegistrationResponse createUser(NewUserRegistration userRequest) {
+
 		String email = userRequest.email().trim().toLowerCase();
-		
-		if(userRepository.existsByEmail(email)) {
+
+		if (userRepository.existsByEmail(email)) {
 			throw new DuplicateEmailException("Email already exists");
-		}  
-		
-		User newUser = new User(
-				userRequest.username(), 
-				userRequest.email(), 
-				passwordEncoder.encode(userRequest.password())
-				);
+		}
+
+		User newUser = new User();
+		newUser.setName(userRequest.name());
+		newUser.setEmail(email);
+		newUser.setPassword(passwordEncoder.encode(userRequest.password()));
 		User saved = userRepository.save(newUser);
-		
-		return new UserResponse(
+
+		return new UserRegistrationResponse(
 				saved.getPublicId(),
 				saved.getEmail(),
-				saved.getCreatedAt()
-				);
+				saved.getCreatedAt());
 	}
 
 	@Transactional(readOnly = true)
