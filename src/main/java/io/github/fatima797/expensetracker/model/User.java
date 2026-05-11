@@ -20,71 +20,69 @@ import jakarta.persistence.Table;
 @Entity
 @Table(name = "users")
 public class User implements UserDetails {
-	
+
 	private static final long serialVersionUID = 1L;
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
-	
+
 	@Column(nullable = false, unique = true, updatable = false)
 	private UUID publicId = UUID.randomUUID();
-	
+
 	@Column(nullable = false, unique = true)
-	private String username;
-	
+	private String name;
+
 	@Column(nullable = false, unique = true)
 	private String email;
-	
+
 	@Column(nullable = false)
 	private String password;
-	
+
 	@Column(nullable = false, updatable = false)
 	private LocalDateTime createdAt;
-	
-	public User() {	
+
+	public User() {
 	}
 
-	public User(String username, String email, String password) {
+	public User(String name, String email, String password) {
 		super();
-		this.username = username;
+		this.name = name;
 		this.email = email;
 		this.password = password;
 	}
-	
+
 	@PrePersist
 	protected void onCreate() {
-	    this.createdAt = LocalDateTime.now();
+		this.createdAt = LocalDateTime.now();
 	}
 
 	public Long getId() {
-		return id;
+		return this.id;
 	}
 
 	public void setId(Long id) {
 		this.id = id;
 	}
-	
+
 	public UUID getPublicId() {
-		return publicId;
+		return this.publicId;
 	}
-	
 
 	public void setPublicId(UUID publicId) {
 		this.publicId = publicId;
 	}
 
-	@Override
-	public String getUsername() {
-		return this.email;
+	public String getName() {
+		return this.name;
 	}
 
-	public void setUsername(String username) {
-		this.username = username;
+	public void setName(String name) {
+		this.name = name;
 	}
-	
+
 	public String getEmail() {
-		return email;
+		return this.email;
 	}
 
 	public void setEmail(String email) {
@@ -92,15 +90,21 @@ public class User implements UserDetails {
 	}
 
 	public String getPassword() {
-		return password;
-	}	
-	
+		return this.password;
+	}
+
 	public void setPassword(String password) {
 		this.password = password;
 	}
-	
+
 	public LocalDateTime getCreatedAt() {
-		return createdAt;
+		return this.createdAt;
+	}
+
+	// Spring Security uses email as the unique authentication identifier
+	@Override
+	public String getUsername() {
+		return this.email;
 	}
 
 	@Override
@@ -127,7 +131,5 @@ public class User implements UserDetails {
 	public boolean isEnabled() {
 		return true;
 	}
-	
-	
-	
+
 }
