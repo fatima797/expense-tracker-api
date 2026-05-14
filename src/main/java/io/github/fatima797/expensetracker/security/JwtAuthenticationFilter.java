@@ -25,19 +25,15 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.RequiredArgsConstructor;
 
 @Component
+@RequiredArgsConstructor
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 	private static final Logger LOGGER = LoggerFactory.getLogger(JwtAuthenticationFilter.class);
 	private final JwtService jwtService;
 	private final UserDetailsService userDetailsService;
-	private final ObjectMapper objectMapper = new ObjectMapper();
-
-	public JwtAuthenticationFilter(JwtService jwtService, UserDetailsService userDetailsService) {
-		super();
-		this.jwtService = jwtService;
-		this.userDetailsService = userDetailsService;
-	}
+	private final ObjectMapper objectMapper;
 
 	@Override
 	protected void doFilterInternal(@NonNull HttpServletRequest request,

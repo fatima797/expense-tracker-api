@@ -9,17 +9,14 @@ import io.github.fatima797.expensetracker.exception.DuplicateEmailException;
 import io.github.fatima797.expensetracker.exception.UserNotFoundException;
 import io.github.fatima797.expensetracker.model.User;
 import io.github.fatima797.expensetracker.repository.UserRepository;
+import lombok.RequiredArgsConstructor;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@RequiredArgsConstructor
 public class UserService {
 	private final UserRepository userRepository;
 	private final PasswordEncoder passwordEncoder;
-
-	public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder) {
-		this.userRepository = userRepository;
-		this.passwordEncoder = passwordEncoder;
-	}
 
 	@Transactional
 	public UserRegistrationResponse createUser(NewUserRegistration userRequest) {

@@ -16,9 +16,16 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @Entity
 @Table(name = "users")
+@Getter
+@Setter
+@NoArgsConstructor
 public class User implements UserDetails {
 
 	private static final long serialVersionUID = 1L;
@@ -27,8 +34,9 @@ public class User implements UserDetails {
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
 
+	@Setter(AccessLevel.NONE)
 	@Column(nullable = false, unique = true, updatable = false)
-	private UUID publicId = UUID.randomUUID();
+	private UUID publicId;
 
 	@Column(nullable = false, unique = true)
 	private String name;
@@ -39,66 +47,16 @@ public class User implements UserDetails {
 	@Column(nullable = false)
 	private String password;
 
+	@Setter(AccessLevel.NONE)
 	@Column(nullable = false, updatable = false)
 	private LocalDateTime createdAt;
 
-	public User() {
-	}
-
-	public User(String name, String email, String password) {
-		super();
-		this.name = name;
-		this.email = email;
-		this.password = password;
-	}
-
 	@PrePersist
 	protected void onCreate() {
+		if (this.publicId == null) {
+			this.publicId = UUID.randomUUID();
+		}
 		this.createdAt = LocalDateTime.now();
-	}
-
-	public Long getId() {
-		return this.id;
-	}
-
-	public void setId(Long id) {
-		this.id = id;
-	}
-
-	public UUID getPublicId() {
-		return this.publicId;
-	}
-
-	public void setPublicId(UUID publicId) {
-		this.publicId = publicId;
-	}
-
-	public String getName() {
-		return this.name;
-	}
-
-	public void setName(String name) {
-		this.name = name;
-	}
-
-	public String getEmail() {
-		return this.email;
-	}
-
-	public void setEmail(String email) {
-		this.email = email;
-	}
-
-	public String getPassword() {
-		return this.password;
-	}
-
-	public void setPassword(String password) {
-		this.password = password;
-	}
-
-	public LocalDateTime getCreatedAt() {
-		return this.createdAt;
 	}
 
 	// Spring Security uses email as the unique authentication identifier
