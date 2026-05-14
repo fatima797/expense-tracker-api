@@ -18,9 +18,11 @@ import io.github.fatima797.expensetracker.dto.UserRegistrationResponse;
 import io.github.fatima797.expensetracker.service.JwtService;
 import io.github.fatima797.expensetracker.service.UserService;
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequestMapping("/api/v1/auth")
+@RequiredArgsConstructor
 public class AuthController {
 
 	private final UserService userService;
@@ -28,12 +30,6 @@ public class AuthController {
 	private final AuthenticationManager authenticationManager;
 
 	private final JwtService jwtService;
-
-	public AuthController(UserService userService, AuthenticationManager authenticationManager, JwtService jwtService) {
-		this.userService = userService;
-		this.authenticationManager = authenticationManager;
-		this.jwtService = jwtService;
-	}
 
 	@PostMapping("/register")
 	public ResponseEntity<UserRegistrationResponse> register(@Valid @RequestBody NewUserRegistration userRequest) {
