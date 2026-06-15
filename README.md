@@ -2,7 +2,9 @@
 
 A Spring Boot REST API designed to help track personal expenses and manage budgets.
 
-**Status:** Authentication & Security complete. Transitioning to Core Expense Management.
+**Status:** Active development - authentication complete, create expense endpoint complete.
+
+[![CI](https://github.com/fatima797/expense-tracker-api/actions/workflows/ci.yml/badge.svg)](https://github.com/fatima797/expense-tracker-api/actions)
 
 ---
 
@@ -13,6 +15,8 @@ A Spring Boot REST API designed to help track personal expenses and manage budge
 - Spring Security
 - Spring Data JPA
 - Maven Wrapper
+- Lombok
+- JJWT (JWT generation and validation)
 - MySQL 8.0
 - H2 (in-memory database for testing)
 - Docker & Docker Compose
@@ -82,7 +86,8 @@ Tests use an in-memory H2 database and require no additional setup.
 | ------ | ----------------------- | ------------------------------ | ------------- |
 | POST   | `/api/v1/auth/register` | Register a new user            | No            |
 | POST   | `/api/v1/auth/login`    | Authenticate and receive JWT   | No            |
-| GET    | `/api/v1/users/me`      | Get authenticated user's email | Yes           |
+| GET    | `/api/v1/users/me`      | Get authenticated user profile | Yes           |
+| POST   | `/api/v1/expenses`      | Create a new expense           | Yes           |
 
 ### POST `/api/v1/auth/register`
 
@@ -96,7 +101,7 @@ Tests use an in-memory H2 database and require no additional setup.
 }
 ```
 
-**Response Body:**
+**Response `201 Created`:**
 
 ```json
 {
@@ -117,7 +122,7 @@ Tests use an in-memory H2 database and require no additional setup.
 }
 ```
 
-**Response Body:**
+**Response `200 OK`:**
 
 ```json
 {
@@ -135,7 +140,7 @@ Tests use an in-memory H2 database and require no additional setup.
 Authorization: Bearer <token>
 ```
 
-**Response Body:**
+**Response `200 OK`:**
 
 ```json
 {
@@ -145,17 +150,130 @@ Authorization: Bearer <token>
 }
 ```
 
+### POST `/api/v1/expenses`
+
+Creates a new expense entry bound to the authenticated user.
+
+**Validation rules:**
+
+- `amount` — required, must be greater than 0, max 2 decimal places
+- `category` — required, accepted values: `GROCERIES`, `LEISURE`, `UTILITIES`, `ELECTRONICS`, `CLOTHING`, `HEALTH`, `OTHERS`
+- `date` — required, must not be in the future
+- `description` — optional, but if provided must be between 1 and 255 characters
+
+**Headers:**
+
+```
+Authorization: Bearer <token>
+```
+
+**Request Body:**
+
+```json
+{
+  "description": "Bought eggs and milk",
+  "amount": 25.95,
+  "category": "GROCERIES",
+  "date": "2026-05-31"
+}
+```
+
+**Response `201 Created`:**
+
+```json
+{
+  "publicId": "e502ffeb-3388-461c-8285-2496e40073b1",
+  "description": "Bought eggs and milk",
+  "amount": 25.95,
+  "category": "GROCERIES",
+  "date": "2026-05-31"
+}
+```
+
+### Error responses:
+
+`400 Bad Request` - validation failure:
+
+```json
+{
+  "status": 400,
+  "errors": {
+    "amount": "Amount must have at most 10 integer digits and 2 decimal places",
+    "date": "Date must not be in the future"
+  },
+  "timestamp": "2026-05-31T17:14:38"
+}
+```
+
+`400 Bad Request` - invalid category value:
+
+```json
+{
+  "status": 400,
+  "errors": {
+    "category": "Invalid value 'TECH' for field 'category'. Accepted values are: GROCERIES, LEISURE, UTILITIES, ELECTRONICS, CLOTHING, HEALTH, OTHERS"
+  },
+  "timestamp": "2026-05-31T17:14:38"
+}
+```
+
+`400 Bad Request` - invalid amount:
+
+```json
+{
+  "status": 400,
+  "errors": {
+    "amount": "Amount must be greater than 0"
+  },
+  "timestamp": "2026-05-31T17:14:38"
+}
+```
+
+`409 Conflict` - duplicate email on registration:
+
+```json
+{
+  "status": 409,
+  "errors": {
+    "email": "Email already exists"
+  },
+  "timestamp": "2026-05-31T17:14:38"
+}
+```
+
+All endpoints may also return:
+
+`401 Unauthorized` - unauthorized access:
+
+```json
+{
+  "status": 401,
+  "error": "Unauthorized",
+  "message": "Authentication is required to access this resource"
+}
+```
+
+> **Note:** Authentication errors (`401`) return a different response structure from application errors (`400`, `409`).
+> This is a known limitation and will be unified in a future release.
+
 ## Features
 
 - **Secure Authentication:** JWT-based login with Spring Security
 - **JWT Filter:** OncePerRequestFilter validates JWT on every secured request
+- **Expense Management:** Authenticated users can create and persist expense entries
+- **Input Validation:** Field-level validation with descriptive error messages including accepted enum values
+- **Ownership Enforcement:** Expenses are scoped to the authenticated user via JWT claims
+- **Error Handling:** Global exception handler returns structured, field-level error responses
 - **Password Safety:** Passwords hashed using BCrypt
 - **Persistence:** MySQL 8.0 with JPA/Hibernate
 - **Containerization:** Fully Dockerized with Docker Compose
+- **CI/CD:** GitHub Actions pipeline runs `./mvnw clean verify` on all pull requests targeting `main`
 
 ## Upcoming features
 
-- Expense CRUD operations with secured endpoints
+- Retrieve expenses (single and paginated)
+- Update and delete expense entries
+- Expense filtering by category and date range
 
 ## Project Challenge Source
 
