@@ -126,7 +126,7 @@ public class AuthControllerTest {
 				.contentType(MediaType.APPLICATION_JSON)
 				.content(objectMapper.writeValueAsString(request)))
 				.andExpect(status().isBadRequest())
-				.andExpect(jsonPath("$.errors.email").value("Email is not valid"));
+				.andExpect(jsonPath("$.errors.email").value("Email should be valid"));
 	}
 
 	@Test
