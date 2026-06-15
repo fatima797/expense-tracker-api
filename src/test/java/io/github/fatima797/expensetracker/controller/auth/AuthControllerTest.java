@@ -1,8 +1,7 @@
-package io.github.fatima797.expensetracker.controller;
+package io.github.fatima797.expensetracker.controller.auth;
 
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -13,13 +12,16 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import io.github.fatima797.expensetracker.config.SecurityConfig;
 import io.github.fatima797.expensetracker.dto.LoginRequest;
 import io.github.fatima797.expensetracker.dto.NewUserRegistration;
 import io.github.fatima797.expensetracker.model.User;
@@ -29,6 +31,7 @@ import io.github.fatima797.expensetracker.service.UserService;
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
+@Import(SecurityConfig.class)
 public class AuthControllerTest {
 
 	@Autowired
@@ -62,8 +65,8 @@ public class AuthControllerTest {
 				.andExpect(header().exists("Location"))
 				.andExpect(jsonPath("$.publicId").exists())
 				.andExpect(jsonPath("$.email").value("test@example.com"))
-				.andExpect(jsonPath("$.createdAt").exists());
-
+				.andExpect(jsonPath("$.createdAt").exists())
+				.andExpect(jsonPath("$.password").doesNotExist());
 	}
 
 	@Test
@@ -91,24 +94,39 @@ public class AuthControllerTest {
 	}
 
 	@Test
+	@Transactional
 	void register_ShouldSaveHashedPasswordInDatabase() throws Exception {
 
+		String newUser = "secureUser";
+		String newEmail = "hash@example.com";
 		String rawPassword = "Password123!";
-		NewUserRegistration request = new NewUserRegistration("secureUser", "hash@example.com", rawPassword);
+		NewUserRegistration request = new NewUserRegistration(newUser, newEmail, rawPassword);
 
 		mockMvc.perform(post("/api/v1/auth/register")
 				.contentType(MediaType.APPLICATION_JSON)
 				.content(objectMapper.writeValueAsString(request)))
 				.andExpect(status().isCreated());
 
-		User savedUser = repository.findByEmail("hash@example.com")
+		User savedUser = repository.findByEmail(newEmail)
 				.orElseThrow(() -> new AssertionError("User was not saved in the database"));
 
+		boolean isBcryptHash = savedUser.getPassword().startsWith("$2"); // Using BCrypt hashing, which starts with
+																			// $2a$, $2b$, or $2y$
+
 		assertNotEquals(rawPassword, savedUser.getPassword());
-		assertTrue(savedUser.getPassword().startsWith("$2")); // Using BCrypt hashing, which starts with $2a$, $2b$,
-																// or $2y$
+		assertTrue(isBcryptHash, "Password should be BCrypt hashed");
 		assertTrue(passwordEncoder.matches(rawPassword, savedUser.getPassword()),
 				"The raw password should match the hashed password in the database");
+	}
+
+	@Test
+	void register_WithInvalidEmailFormat_ShouldReturn400() throws Exception {
+		NewUserRegistration request = new NewUserRegistration("test", "not-an-email", "Password123!");
+		mockMvc.perform(post("/api/v1/auth/register")
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(objectMapper.writeValueAsString(request)))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.errors.email").value("Email is not valid"));
 	}
 
 	@Test
@@ -164,7 +182,6 @@ public class AuthControllerTest {
 		LoginRequest loginRequest = new LoginRequest("test@example.com", "Password123!");
 
 		mockMvc.perform(post("/api/v1/auth/login")
-				.with(csrf())
 				.contentType(MediaType.APPLICATION_JSON)
 				.content(objectMapper.writeValueAsString(loginRequest)))
 				.andExpect(status().isOk())
@@ -183,8 +200,8 @@ public class AuthControllerTest {
 				.content(objectMapper.writeValueAsString(blankRequest)))
 				.andExpect(status().isBadRequest())
 				.andExpect(jsonPath("$.status").value(400))
-				.andExpect(jsonPath("$.errors.email").exists())
-				.andExpect(jsonPath("$.errors.password").exists());
+				.andExpect(jsonPath("$.errors.email").value("Email is required"))
+				.andExpect(jsonPath("$.errors.password").value("Password is required"));
 	}
 
 }
