@@ -2,8 +2,6 @@ package io.github.fatima797.expensetracker.security;
 
 import java.io.IOException;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.lang.NonNull;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -18,6 +16,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.github.fatima797.expensetracker.dto.SecurityErrorResponse;
+import io.github.fatima797.expensetracker.exception.JwtErrorMessages;
 import io.github.fatima797.expensetracker.service.JwtService;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.JwtException;
@@ -26,11 +25,12 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
-	private static final Logger LOGGER = LoggerFactory.getLogger(JwtAuthenticationFilter.class);
 	private final JwtService jwtService;
 	private final UserDetailsService userDetailsService;
 	private final ObjectMapper objectMapper;
@@ -43,12 +43,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 		final String authHeader = request.getHeader("Authorization");
 
 		if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-			LOGGER.debug("No Bearer token found for request: {} ", request.getRequestURI());
+			log.debug("No Bearer token found for request: {} ", request.getRequestURI());
 			filterChain.doFilter(request, response);
 			return;
 		}
 
-		LOGGER.debug("Bearer token present on request: {}", request.getRequestURI());
+		log.debug("Bearer token present on request: {}", request.getRequestURI());
 
 		try {
 
@@ -66,25 +66,26 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
 					SecurityContextHolder.getContext().setAuthentication(authToken);
 
-					LOGGER.info("JWT validated successfully for user: {}", userEmail);
+					log.info("JWT validated successfully for user: {}", userEmail);
 				} else {
-					LOGGER.warn("Token validation failed for user: {}", userEmail);
+					log.warn("Token validation failed for user: {}", userEmail);
 				}
 			}
 
 		} catch (ExpiredJwtException e) {
-			LOGGER.warn("JWT expired {}: {}", request.getRequestURI(), e.getMessage());
-			writeErrorResponse(response, HttpStatus.UNAUTHORIZED, "Token Expired",
-					"Your session has expired. Please log in again.");
+			log.warn("JWT expired {}: {}", request.getRequestURI(), e.getMessage());
+			writeErrorResponse(response, HttpStatus.UNAUTHORIZED, JwtErrorMessages.TOKEN_EXPIRED_ERROR,
+					JwtErrorMessages.TOKEN_EXPIRED_MESSAGE);
 			return;
 		} catch (JwtException e) {
-			LOGGER.warn("Invalid JWT: {}", request.getRequestURI(), e.getMessage());
-			writeErrorResponse(response, HttpStatus.UNAUTHORIZED, "Unauthorized",
-					"Invalid token. Please log in again.");
+			log.warn("Invalid JWT: {}", request.getRequestURI(), e.getMessage());
+			writeErrorResponse(response, HttpStatus.UNAUTHORIZED, JwtErrorMessages.UNAUTHORIZED_ERROR,
+					JwtErrorMessages.INVALID_TOKEN_MESSAGE);
 			return;
 		} catch (UsernameNotFoundException e) {
-			LOGGER.warn("User not found for URI {} : {}", request.getRequestURI(), e.getMessage());
-			writeErrorResponse(response, HttpStatus.UNAUTHORIZED, "Unauthorized", "User not found");
+			log.warn("User not found for URI {} : {}", request.getRequestURI(), e.getMessage());
+			writeErrorResponse(response, HttpStatus.UNAUTHORIZED, JwtErrorMessages.UNAUTHORIZED_ERROR,
+					JwtErrorMessages.JWT_USER_NOT_FOUND_MESSAGE);
 			return;
 		}
 
