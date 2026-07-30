@@ -1,7 +1,9 @@
 package io.github.fatima797.expensetracker.controller;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
 import static org.hamcrest.Matchers.containsString;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -23,6 +25,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
@@ -32,7 +35,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.fatima797.expensetracker.config.SecurityConfig;
 import io.github.fatima797.expensetracker.dto.CreateExpenseRequest;
 import io.github.fatima797.expensetracker.dto.ExpenseResponse;
+import io.github.fatima797.expensetracker.exception.ExpenseNotFoundException;
 import io.github.fatima797.expensetracker.exception.GlobalExceptionHandler;
+import io.github.fatima797.expensetracker.exception.UserNotFoundException;
 import io.github.fatima797.expensetracker.model.ExpenseCategory;
 import io.github.fatima797.expensetracker.model.User;
 import io.github.fatima797.expensetracker.security.CustomAuthenticationEntryPoint;
@@ -191,6 +196,57 @@ public class ExpenseControllerTest {
                                 .andExpect(jsonPath("$.errors.category").value(containsString("INVALID_CATEGORY")))
                                 .andExpect(jsonPath("$.errors.category")
                                                 .value(containsString(ExpenseCategory.GROCERIES.name())));
+        }
+
+        @Test
+        void getExpense_ShouldReturn404_WhenExpenseDoesNotExist() throws Exception {
+                UUID nonExistentPublicId = UUID.randomUUID();
+
+                when(expenseService.getExpense(any(UUID.class), any(User.class)))
+                                .thenThrow(new ExpenseNotFoundException(nonExistentPublicId));
+
+                mockMvc.perform(get("/api/v1/expenses/{publicId}", nonExistentPublicId)
+                                .header("Authorization", "Bearer " + validToken))
+                                .andExpect(status().isNotFound())
+                                .andExpect(jsonPath("$.status").value(404))
+                                .andExpect(jsonPath("$.errors.expense")
+                                                .value("Expense not found with id: " + nonExistentPublicId));
+        }
+
+        @Test
+        void getExpense_ShouldReturn200_WhenExpenseExists() throws Exception {
+                UUID validPublicId = UUID.randomUUID();
+                String expectedDescription = "Bought eggs and milk";
+                BigDecimal expectedAmount = new BigDecimal("15.95");
+                ExpenseCategory expectedCategory = ExpenseCategory.GROCERIES;
+                LocalDate expectedDate = LocalDate.now().minusDays(5);
+
+                ExpenseResponse mockResponse = new ExpenseResponse(validPublicId, expectedDescription, expectedAmount,
+                                expectedCategory, expectedDate);
+
+                when(expenseService.getExpense(any(UUID.class), any(User.class))).thenReturn(mockResponse);
+
+                mockMvc.perform(get("/api/v1/expenses/{publicId}", validPublicId)
+                                .header("Authorization", "Bearer " + validToken))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.publicId").value(validPublicId.toString()))
+                                .andExpect(jsonPath("$.description").value(expectedDescription))
+                                .andExpect(jsonPath("$.amount").value(expectedAmount.doubleValue()))
+                                .andExpect(jsonPath("$.category").value(expectedCategory.name()))
+                                .andExpect(jsonPath("$.date").value(expectedDate.toString()));
+
+        }
+
+        @Test
+        void getExpense_ShouldReturn401_WhenTokenDoesNotExist() throws Exception {
+                UUID validPublicId = UUID.randomUUID();
+
+                mockMvc.perform(get("/api/v1/expenses/{publicId}", validPublicId))
+                                .andExpect(status().isUnauthorized())
+                                .andExpect(jsonPath("$.status").value(401))
+                                .andExpect(jsonPath("$.error").value("Unauthorized"))
+                                .andExpect(jsonPath("$.message")
+                                                .value("Authentication is required to access this resource"));
         }
 
 }

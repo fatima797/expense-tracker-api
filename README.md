@@ -2,7 +2,7 @@
 
 A Spring Boot REST API designed to help track personal expenses and manage budgets.
 
-**Status:** Active development - authentication complete, create expense endpoint complete.
+**Status:** Active development - authentication complete, create and get single expense endpoints complete.
 
 [![CI](https://github.com/fatima797/expense-tracker-api/actions/workflows/ci.yml/badge.svg)](https://github.com/fatima797/expense-tracker-api/actions)
 
@@ -82,12 +82,13 @@ Tests use an in-memory H2 database and require no additional setup.
 
 ## API Endpoints
 
-| Method | Endpoint                | Description                    | Auth Required |
-| ------ | ----------------------- | ------------------------------ | ------------- |
-| POST   | `/api/v1/auth/register` | Register a new user            | No            |
-| POST   | `/api/v1/auth/login`    | Authenticate and receive JWT   | No            |
-| GET    | `/api/v1/users/me`      | Get authenticated user profile | Yes           |
-| POST   | `/api/v1/expenses`      | Create a new expense           | Yes           |
+| Method | Endpoint                      | Description                    | Auth Required |
+| ------ | ----------------------------- | ------------------------------ | ------------- |
+| POST   | `/api/v1/auth/register`       | Register a new user            | No            |
+| POST   | `/api/v1/auth/login`          | Authenticate and receive JWT   | No            |
+| GET    | `/api/v1/users/me`            | Get authenticated user profile | Yes           |
+| POST   | `/api/v1/expenses`            | Create a new expense           | Yes           |
+| GET    | `/api/v1/expenses/{publicId}` | Get a single expense           | Yes           |
 
 ### POST `/api/v1/auth/register`
 
@@ -190,6 +191,28 @@ Authorization: Bearer <token>
 }
 ```
 
+### GET `/api/v1/expenses/{publicId}`
+
+Retrieves a single expense by its public ID. The expense must belong to the authenticated user.
+
+**Headers:**
+
+```
+Authorization: Bearer <token>
+```
+
+**Response `200 OK`:**
+
+```json
+{
+  "publicId": "1ec49c74-69c9-4ce0-89fa-31b3ae4651ce",
+  "description": "Bought eggs and milk",
+  "amount": 22.95,
+  "category": "GROCERIES",
+  "date": "2026-06-30"
+}
+```
+
 ### Error responses:
 
 `400 Bad Request` - validation failure:
@@ -253,11 +276,24 @@ All endpoints may also return:
 }
 ```
 
+`404 Not Found` - expense not found or belongs to another user:
+
+```json
+{
+  "status": 404,
+  "errors": {
+    "expense": "Expense not found with id: 1ec49c74-69c9-4ce0-89fa-31b3ae4651ce"
+  },
+  "timestamp": "2026-07-11T18:20:45.077013768"
+}
+```
+
 > **Note:** Authentication errors (`401`) return a different response structure from application errors (`400`, `409`).
 > This is a known limitation and will be unified in a future release.
 
 ## Features
 
+- **Single Expense Retrieval:** Fetch individual expense entries using unique public IDs (`UUID`), with enforced user ownership.
 - **Secure Authentication:** JWT-based login with Spring Security
 - **JWT Filter:** OncePerRequestFilter validates JWT on every secured request
 - **Expense Management:** Authenticated users can create and persist expense entries
@@ -271,7 +307,7 @@ All endpoints may also return:
 
 ## Upcoming features
 
-- Retrieve expenses (single and paginated)
+- Retrieve all expenses with pagination and date range filtering
 - Update and delete expense entries
 - Expense filtering by category and date range
 

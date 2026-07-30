@@ -63,6 +63,11 @@ public class GlobalExceptionHandler {
 		return ResponseEntity.status(status).body(response);
 	}
 
+	@ExceptionHandler(ExpenseNotFoundException.class)
+	public ResponseEntity<ErrorResponse> handleExpenseNotFound(ExpenseNotFoundException ex) {
+		return buildErrorResponse(HttpStatus.NOT_FOUND, "expense", ex.getMessage());
+	}
+
 	@ExceptionHandler(HttpMessageNotReadableException.class)
 	public ResponseEntity<ErrorResponse> handleHttpMessageNotReadable(HttpMessageNotReadableException ex) {
 		if (ex.getCause() instanceof InvalidFormatException invalidFormatEx) {

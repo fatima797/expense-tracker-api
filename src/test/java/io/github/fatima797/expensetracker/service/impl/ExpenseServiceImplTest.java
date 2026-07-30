@@ -1,11 +1,15 @@
 package io.github.fatima797.expensetracker.service.impl;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.Optional;
 import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
@@ -16,6 +20,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import io.github.fatima797.expensetracker.dto.CreateExpenseRequest;
 import io.github.fatima797.expensetracker.dto.ExpenseResponse;
+import io.github.fatima797.expensetracker.exception.ExpenseNotFoundException;
 import io.github.fatima797.expensetracker.mapper.ExpenseMapper;
 import io.github.fatima797.expensetracker.model.Expense;
 import io.github.fatima797.expensetracker.model.ExpenseCategory;
@@ -36,42 +41,72 @@ public class ExpenseServiceImplTest {
 
     @Test
     void createExpense_ShouldReturnExpenseResponse() {
+        UUID publicId = UUID.randomUUID();
+        LocalDate today = LocalDate.now();
+        String description = "Bought eggs and milk";
+        BigDecimal amount = new BigDecimal("25.95");
+        ExpenseCategory category = ExpenseCategory.GROCERIES;
+
         User testUser = new User();
         testUser.setName("test");
         testUser.setEmail("test@example.com");
 
-        String description = "Bought eggs and milk";
-        BigDecimal amount = new BigDecimal("25.95");
-        ExpenseCategory category = ExpenseCategory.GROCERIES;
+        CreateExpenseRequest request = new CreateExpenseRequest(
+                description, amount, category, today);
+
+        Expense mockEntity = new Expense();
+        ExpenseResponse expectedResponse = new ExpenseResponse(
+                publicId, description, amount, category, today);
+
+        when(expenseMapper.toEntity(request, testUser)).thenReturn(mockEntity);
+        when(expenseRepository.save(mockEntity)).thenReturn(mockEntity);
+        when(expenseMapper.toResponse(mockEntity)).thenReturn(expectedResponse);
+
+        ExpenseResponse result = expenseService.createExpense(request, testUser);
+
+        assertEquals(expectedResponse, result);
+        verify(expenseMapper).toEntity(request, testUser);
+        verify(expenseRepository).save(mockEntity);
+        verify(expenseMapper).toResponse(mockEntity);
+    }
+
+    @Test
+    void getExpense_ShouldReturnExpenseResponse_WhenExpenseExists() {
+        UUID publicId = UUID.randomUUID();
         LocalDate today = LocalDate.now();
 
-        CreateExpenseRequest validRequest = new CreateExpenseRequest(description, amount, category, today);
+        User testUser = new User();
+        testUser.setName("test");
+        testUser.setEmail("test@example.com");
 
-        Expense expense = new Expense();
-        expense.setDescription(description);
-        expense.setAmount(amount);
-        expense.setCategory(category);
-        expense.setDate(today);
-
+        Expense mockEntity = new Expense();
         ExpenseResponse expectedResponse = new ExpenseResponse(
-                UUID.randomUUID(),
-                description,
-                amount,
-                category,
-                today);
+                publicId, "Food", new BigDecimal("10.00"),
+                ExpenseCategory.GROCERIES, today);
 
-        when(expenseMapper.toEntity(validRequest, testUser)).thenReturn(expense);
-        when(expenseRepository.save(expense)).thenReturn(expense);
-        when(expenseMapper.toResponse(expense)).thenReturn(expectedResponse);
+        when(expenseRepository.findByPublicIdAndUser(publicId, testUser))
+                .thenReturn(Optional.of(mockEntity));
+        when(expenseMapper.toResponse(mockEntity)).thenReturn(expectedResponse);
 
-        ExpenseResponse actualResponse = expenseService.createExpense(validRequest, testUser);
+        ExpenseResponse result = expenseService.getExpense(publicId, testUser);
 
-        assertNotNull(actualResponse);
-        assertEquals(expectedResponse.publicId(), actualResponse.publicId());
-        assertEquals(expectedResponse.description(), actualResponse.description());
-        assertEquals(expectedResponse.amount(), actualResponse.amount());
-        assertEquals(expectedResponse.category(), actualResponse.category());
-        assertEquals(expectedResponse.date(), actualResponse.date());
+        assertEquals(expectedResponse, result);
+        verify(expenseRepository).findByPublicIdAndUser(publicId, testUser);
+        verify(expenseMapper).toResponse(mockEntity);
+    }
+
+    @Test
+    void getExpense_ShouldThrowExpenseNotFoundException_WhenExpenseDoesNotExist() {
+        UUID publicId = UUID.randomUUID();
+        User testUser = new User();
+
+        when(expenseRepository.findByPublicIdAndUser(publicId, testUser)).thenReturn(Optional.empty());
+
+        assertThrows(ExpenseNotFoundException.class, () -> expenseService.getExpense(publicId, testUser));
+
+        verify(expenseRepository).findByPublicIdAndUser(publicId, testUser);
+        verify(expenseMapper, never()).toResponse(any());
+
     }
 
 }

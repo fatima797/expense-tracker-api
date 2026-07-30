@@ -1,9 +1,12 @@
 package io.github.fatima797.expensetracker.service.impl;
 
+import java.util.UUID;
+
 import org.springframework.stereotype.Service;
 
 import io.github.fatima797.expensetracker.dto.CreateExpenseRequest;
 import io.github.fatima797.expensetracker.dto.ExpenseResponse;
+import io.github.fatima797.expensetracker.exception.ExpenseNotFoundException;
 import io.github.fatima797.expensetracker.mapper.ExpenseMapper;
 import io.github.fatima797.expensetracker.model.Expense;
 import io.github.fatima797.expensetracker.model.User;
@@ -19,6 +22,7 @@ public class ExpenseServiceImpl implements ExpenseService {
     private final ExpenseRepository expenseRepository;
     private final ExpenseMapper expenseMapper;
 
+    @Override
     public ExpenseResponse createExpense(CreateExpenseRequest request, User authenticatedUser) {
 
         Expense expense = expenseMapper.toEntity(request, authenticatedUser);
@@ -29,6 +33,13 @@ public class ExpenseServiceImpl implements ExpenseService {
 
         return expenseMapper.toResponse(savedExpense);
 
+    }
+
+    @Override
+    public ExpenseResponse getExpense(UUID publicId, User user) {
+        return expenseRepository.findByPublicIdAndUser(publicId, user)
+                .map(expenseMapper::toResponse)
+                .orElseThrow(() -> new ExpenseNotFoundException(publicId));
     }
 
 }
